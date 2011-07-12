@@ -8,13 +8,21 @@ SOURCEDIR=/mnt/files
 
 MASTER_HOST=localhost
 
+MY_HOSTNAME="`hostname -f`"
+
 RSYNC_SSH_OPTIONS='-o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no'
+
+#cleanup old lock files, older than 30 minutes
+find /tmp/rsync.lock -mmin +30 -exec rm {} \ &>/dev/null
 
 
 if [ ! -f ${LOCKDIR}/rsync.lock ]; then
     echo $$ > ${LOCKDIR}/rsync.lock
+    echo ${MY_HOSTNAME} >> ${LOCKDIR}/rsync.lock
+elif [ -z "`cat ${LOCKDIR}/rsync.lock} | grep ${MY_HOSTNAME}`" ]; then
+    exit 0 #The lock file exists and isnt owned by my host
 else
-    CURRENTPID=`cat ${LOCKDIR}/rsync.lock`
+    CURRENTPID=`head -n1 ${LOCKDIR}/rsync.lock`
     #Check if the PID is alive, we do this by sending SIG 0, which does nothing
     kill -0 ${CURRENTPID} &> /dev/null
     if [ $? -ne 0 ]; then
