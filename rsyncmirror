@@ -1,0 +1,31 @@
+#!/bin/bash
+# Copyright Narayan Newton <nnewton@tag1consulting.com>
+# RSYNC Mirror Script
+
+LOCKDIR=/tmp
+DESTDIR=/mnt/files2
+SOURCEDIR=/mnt/files
+
+MASTER_HOST=localhost
+
+RSYNC_SSH_OPTIONS='-o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no'
+
+
+if [ ! -f ${LOCKDIR}/rsync.lock ]; then
+    echo $$ > ${LOCKDIR}/rsync.lock
+else
+    CURRENTPID=`cat ${LOCKDIR}/rsync.lock`
+    #Check if the PID is alive, we do this by sending SIG 0, which does nothing
+    kill -0 ${CURRENTPID} &> /dev/null
+    if [ $? -ne 0 ]; then
+      echo $$ > ${LOCKDIR}/rsync.lock
+    #Check if we are the process that grabbed the lock, if we arnt and the above test already passed, exit
+    elif [ ${CURRENTPID} -ne $$ ]; then
+        exit 0
+    fi
+fi
+
+rsync -avz -e "ssh ${RSYNC_SSH_OPTIONS}" ${MASTER_HOST}:${SOURCEDIR}/ ${DESTDIR}/
+
+rm -f ${LOCKDIR}/rsync.lock
+exit 0
