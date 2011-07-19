@@ -3,10 +3,10 @@
 # RSYNC Mirror Script
 
 LOCKDIR=/tmp
-DESTDIR=/mnt/files2
-SOURCEDIR=/mnt/files
+DESTDIR=/mnt/test
+SOURCEDIR=/home/syncuser
 
-MASTER_HOSTS=( "host1", "host2", "host3" )
+MASTER_HOSTS=( "hosts")
 
 MY_HOSTNAME="`hostname -f`"
 
@@ -34,9 +34,13 @@ else
 fi
 
 for host in $MASTER_HOSTS; do
+  if [ $host == $MY_HOSTNAME ]; then
+    continue;
+  fi
+
   nc -z -w1 $host 22
   if [ $? -eq 0 ]; then
-    rsync -avz -e "ssh ${RSYNC_SSH_OPTIONS}" ${MASTER_HOST}:${SOURCEDIR}/ ${DESTDIR}/
+    rsync -avz -e "ssh ${RSYNC_SSH_OPTIONS}" ${host}:${SOURCEDIR}/ ${DESTDIR}/
     rm -f ${LOCKDIR}/rsync.lock
     exit 0
   fi
