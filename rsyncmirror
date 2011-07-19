@@ -6,7 +6,7 @@ LOCKDIR=/tmp
 DESTDIR=/mnt/files2
 SOURCEDIR=/mnt/files
 
-MASTER_HOST=localhost
+MASTER_HOSTS=( "host1", "host2", "host3" )
 
 MY_HOSTNAME="`hostname -f`"
 
@@ -33,7 +33,16 @@ else
     fi
 fi
 
-rsync -avz -e "ssh ${RSYNC_SSH_OPTIONS}" ${MASTER_HOST}:${SOURCEDIR}/ ${DESTDIR}/
+for host in $MASTER_HOSTS; do
+  nc -z -w1 $host 22
+  if [ $? -eq 0 ]; then
+    rsync -avz -e "ssh ${RSYNC_SSH_OPTIONS}" ${MASTER_HOST}:${SOURCEDIR}/ ${DESTDIR}/
+    rm -f ${LOCKDIR}/rsync.lock
+    exit 0
+  fi
+done
+
 
 rm -f ${LOCKDIR}/rsync.lock
-exit 0
+echo "All source hosts down"
+exit 1
